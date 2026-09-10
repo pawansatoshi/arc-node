@@ -107,16 +107,17 @@ export const schemaValidatorManager = z
         message: 'At least one validator must have positive voting power',
       })
     }
-    // Verify the public keys are unique.
-    const publicKeySet = new Set()
+    // Verify the public keys are unique by their byte identity, not hex casing.
+    const publicKeySet = new Set<string>()
     for (const validator of data.validators) {
-      if (publicKeySet.has(validator.publicKey)) {
+      const normalizedPublicKey = validator.publicKey.toLowerCase()
+      if (publicKeySet.has(normalizedPublicKey)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: `Public key ${validator.publicKey} must be unique`,
         })
       }
-      publicKeySet.add(validator.publicKey)
+      publicKeySet.add(normalizedPublicKey)
     }
 
     const permissionedManager = data.PermissionedValidatorManager
@@ -129,38 +130,43 @@ export const schemaValidatorManager = z
     })
 
     enforceOperatorsNotProxyAdmin(ctx, 'PermissionedValidatorManager', permissionedManager.proxy.admin, [
-      { key: 'owner', value: permissionedManager.owner },
-      { key: 'pauser', value: permissionedManager.pauser },
+      { key: 'owner', value: permissionedManager.owner.toLowerCase() as Address },
+      { key: 'pauser', value: permissionedManager.pauser.toLowerCase() as Address },
       ...permissionedManager.validatorRegisterers.map((validatorRegisterer) => ({
         key: `validatorRegisterer[${validatorRegisterer}]`,
-        value: validatorRegisterer,
+        value: validatorRegisterer.toLowerCase() as Address,
       })),
-      ...flattenedControllers.map(({ key, address }) => ({ key, value: address })),
+      ...flattenedControllers.map(({ key, address }) => ({ key, value: address.toLowerCase() as Address })),
     ])
 
-    // Verify addresses are unique for different roles.
-    const validatorRegistererSet = new Set()
+    // Verify addresses are unique for different roles by their byte identity.
+    const validatorRegistererSet = new Set<string>()
     for (const validatorRegisterer of permissionedManager.validatorRegisterers) {
-      if (validatorRegistererSet.has(validatorRegisterer)) {
+      const normalizedValidatorRegisterer = validatorRegisterer.toLowerCase()
+      if (validatorRegistererSet.has(normalizedValidatorRegisterer)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: `ValidatorRegisterer ${validatorRegisterer} must be unique`,
         })
       }
-      validatorRegistererSet.add(validatorRegisterer)
+      validatorRegistererSet.add(normalizedValidatorRegisterer)
     }
-    const controllerSet = new Set<Address>()
+    const controllerSet = new Set<string>()
     for (const { address, key } of flattenedControllers) {
-      if (controllerSet.has(address)) {
+      const normalizedAddress = address.toLowerCase()
+      if (controllerSet.has(normalizedAddress)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: `Controller ${address} (${key}) must be unique across all validators`,
         })
       }
-      controllerSet.add(address)
+      controllerSet.add(normalizedAddress)
     }
 
-    if (data.proxy.address != null && data.proxy.address !== DEFAULT_VALIDATOR_REGISTRY_PROXY_ADDRESS) {
+    if (
+      data.proxy.address != null &&
+      data.proxy.address.toLowerCase() !== DEFAULT_VALIDATOR_REGISTRY_PROXY_ADDRESS.toLowerCase()
+    ) {
       // the ValidatorRegistry address is hardcoded in the PermissionedValidatorManager.
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -173,7 +179,7 @@ export const schemaValidatorManager = z
     // would simultaneously own the registry's logic and control its upgrades.
     const pvmProxyAddress = permissionedManager.proxy.address ?? DEFAULT_PERMISSIONED_PROXY_ADDRESS
     enforceOperatorsNotProxyAdmin(ctx, 'ValidatorRegistry', data.proxy.admin, [
-      { key: 'owner', value: pvmProxyAddress },
+      { key: 'owner', value: pvmProxyAddress.toLowerCase() as Address },
     ])
   })
 
