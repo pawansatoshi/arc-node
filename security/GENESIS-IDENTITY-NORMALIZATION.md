@@ -1,10 +1,10 @@
-# Genesis identity validation: case-sensitive uniqueness
+# Genesis identity validation: case-sensitive identity checks
 
 ## Finding
 
-`schemaAddress` and `schemaHex` accept mixed-case hexadecimal identities, but several uniqueness and role-separation checks in `scripts/genesis/ValidatorManager.ts` compare the raw strings.
+`schemaAddress` and `schemaHex` accept mixed-case hexadecimal identities, but several identity checks in `scripts/genesis/ValidatorManager.ts` compare raw hexadecimal strings.
 
-Ethereum addresses and fixed-size hexadecimal public keys are byte identities; hexadecimal casing does not change the represented bytes. Therefore two spellings of the same identity can bypass string-based uniqueness or role-separation checks while later genesis construction maps them to the same underlying identity.
+Ethereum addresses and fixed-size hexadecimal public keys represent byte identities; hexadecimal casing does not change the represented bytes. Therefore two spellings of the same identity can bypass string-based uniqueness or role-separation checks while later genesis construction maps them to the same underlying identity.
 
 Affected checks include:
 
@@ -29,12 +29,12 @@ A raw `Set` / `===` comparison treats these as different strings even though the
 
 This is a genesis/configuration integrity issue. It does not by itself grant a permissionless attacker runtime privileges, because the genesis configuration is operator-controlled. The risk is that a malformed or adversarial configuration can pass validation while assigning the same on-chain identity to multiple roles or entries that the validator is intended to reject as duplicates.
 
-## Proposed fix
+## Fix
 
-Normalize only for identity comparisons (`toLowerCase()`), while preserving the original input for serialization and error messages. The patch in `security/genesis-identity-normalization-fix.patch` implements this narrowly.
+Normalize hexadecimal identities only at comparison boundaries (`toLowerCase()`), while preserving the original input for serialization and error messages. Proxy-admin comparisons normalize both operands in the shared `enforceOperatorsNotProxyAdmin` helper.
 
-## Validation required before upstream submission
+## Regression coverage
 
-Run the repository's normal TypeScript formatting/lint/tests and add regression coverage proving that mixed-case spellings of the same public key/address are rejected by the schema.
+`tests/unit/validator-manager-genesis-validation.test.ts` now covers mixed-case collisions for public keys, controllers, validator registerers, and proxy-admin/operator separation.
 
-This change should be submitted only after those tests pass locally.
+Before upstream submission, run the repository's normal TypeScript formatting, linting, and unit-test commands and attach the passing CI result to the pull request.
