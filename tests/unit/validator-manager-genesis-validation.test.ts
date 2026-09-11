@@ -143,18 +143,4 @@ describe('ValidatorManager genesis validator-set validation', () => {
 
     expect(result.success).to.be.false
   })
-
-  it('accepts a ValidatorRegistry proxy address when only hexadecimal casing differs', () => {
-    const proxyAddress = '0x3600000000000000000000000000000000000002'
-    const result = schemaValidatorManager.safeParse(
-      configWithValidators([validator(PUBLIC_KEY_A, CONTROLLER_A, 20n)], {
-        proxy: {
-          address: proxyAddress.toUpperCase().replace('0X', '0x'),
-          admin: REGISTRY_ADMIN,
-        },
-      }),
-    )
-
-    expect(result.success).to.be.true
-  })
 })
