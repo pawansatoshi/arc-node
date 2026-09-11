@@ -10,8 +10,9 @@
 - Validator-registerer uniqueness
 - Controller uniqueness across validators
 - Operator/role versus proxy-admin separation
-- ValidatorRegistry proxy-address comparison
 - NativeFiatToken minter uniqueness
+
+The ValidatorRegistry proxy-address comparison is not an affected casing path: the current hard-coded system-contract address contains only numeric hexadecimal digits, so no alternate mixed-case spelling can exist.
 
 ## Impact
 
